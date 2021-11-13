@@ -5,6 +5,5 @@ BUILD_SEMVER := $(shell cat .SEMVER)
 .PHONY: all build
 
 build:
-	mkdir -p build
 	go build .
 	mv kraken /usr/local/bin/kraken

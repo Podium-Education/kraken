@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/fs"
 	"io/ioutil"
-	"log"
 	"os"
 	"path"
 	"path/filepath"
@@ -38,24 +37,26 @@ var (
 )
 
 func main() {
-	log.SetFlags(log.Lshortfile)
-
 	_, tokenFound := os.LookupEnv("GITHUB_TOKEN")
 	if !tokenFound {
-		log.Fatalln("GITHUB_TOKEN environment variable not found")
+		fmt.Println("GITHUB_TOKEN environment variable not found")
+		os.Exit(1)
 	}
 
 	args := os.Args[1:]
 	if len(args) != 1 {
-		log.Fatalln("please provide PR number as argument")
+		fmt.Println("please provide PR number as argument")
+		os.Exit(1)
 	}
 	pullRequestNumber, err := strconv.Atoi(args[0])
 	if err != nil {
-		log.Fatalln(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 	currentDir, err := os.Getwd()
 	if err != nil {
-		log.Fatalln(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 	project := path.Base(currentDir)
 
@@ -64,20 +65,21 @@ func main() {
 	wikiRepo, wikiPath := getWikiRepo(project)
 	changelog := clog.Parse(readChangelog(wikiPath))
 	version, pullRequestURL, pullRequestBody := getPullRequestDetails(project, pullRequestNumber)
-	fmt.Printf("Adding %s to changelog\n", version)
+	fmt.Printf("Attempting to add version %s to changelog...\n", version)
 	changelog.AddRelease(version, pullRequestURL, pullRequestBody)
 	if writeChangelog(wikiPath, changelog.String()) {
-		fmt.Printf("Pushing changes to %s\n", project)
+		fmt.Printf("Pushing changes to %s...\n", project)
 		commitAndPush(wikiRepo)
 	}
 	deleteWorkspace()
-
+	fmt.Println("Done!")
 }
 
 func makeWorkspace() {
 	dir, err := ioutil.TempDir("/tmp", "kraken-*")
 	if err != nil {
-		log.Fatalln(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 	tmpDir = dir
 }
@@ -96,22 +98,24 @@ func getProjectRepo(project string) (*git.Repository, string) {
 
 func getRepo(cloneURL, destination string) (*git.Repository, string) {
 	_, err := git.PlainClone(destination, false, &git.CloneOptions{
-		URL:      cloneURL,
-		Auth:     auth,
-		Progress: os.Stdout,
+		URL:  cloneURL,
+		Auth: auth,
 	})
 
 	if err != nil && err.Error() != "repository already exists" {
-		log.Fatalln(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
 	repo, err := git.PlainOpen(destination)
 	if err != nil {
-		log.Fatalln(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 	worktree, err := repo.Worktree()
 	if err != nil {
-		log.Fatalln(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
 	// git reset --hard
@@ -119,7 +123,8 @@ func getRepo(cloneURL, destination string) (*git.Repository, string) {
 		Mode: git.HardReset,
 	})
 	if err != nil {
-		log.Fatalln(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
 	// git pull origin
@@ -128,7 +133,8 @@ func getRepo(cloneURL, destination string) (*git.Repository, string) {
 		Auth:       auth,
 	})
 	if err != nil && err.Error() != "already up-to-date" {
-		log.Fatalln(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
 	return repo, destination
@@ -141,12 +147,14 @@ func getWikiCloneURL(path string) string {
 func getCloneURL(path string) string {
 	repo, err := git.PlainOpen(path)
 	if err != nil {
-		log.Fatalln(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
 	config, err := repo.Config()
 	if err != nil {
-		log.Fatalln(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 	remoteURL := config.Remotes["origin"].URLs[0]
 	cloneURL := strings.ReplaceAll(remoteURL, "git@github.com:", "https://github.com/")
@@ -163,7 +171,8 @@ func getPullRequestDetails(project string, pullRequestNumber int) (version strin
 		project,
 		&github.PullRequestListOptions{})
 	if err != nil {
-		log.Fatalln(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
 	var foundPullRequest *github.PullRequest
@@ -175,33 +184,48 @@ func getPullRequestDetails(project string, pullRequestNumber int) (version strin
 		}
 	}
 	if foundPullRequest == nil {
-		log.Fatalln("no pull request found")
+		fmt.Println("no pull request found")
 	}
 
 	pullRequestCommit := foundPullRequest.GetHead().GetSHA()
 	projectRepo, projectPath := getProjectRepo(project)
 	if err != nil {
-		log.Fatalln(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
 	projectWorktree, err := projectRepo.Worktree()
 	if err != nil {
-		log.Fatalln(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
 	err = projectWorktree.Checkout(&git.CheckoutOptions{
 		Hash: plumbing.NewHash(pullRequestCommit),
 	})
 	if err != nil {
-		log.Fatalln(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
 	out, err := ioutil.ReadFile(filepath.Join(projectPath, ".SEMVER"))
 	if err != nil {
-		log.Fatalln(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 	version = strings.TrimSpace(string(out))
-	return version, foundPullRequest.GetURL(), foundPullRequest.GetBody()
+
+	var pullRequestBody string
+	if foundPullRequest.GetUser().GetLogin() == "dependabot[bot]" {
+		pullRequestBody =
+			`
+### Security
+- Dependabot bumped dependencies
+`
+	} else {
+		pullRequestBody = foundPullRequest.GetBody()
+	}
+	return version, foundPullRequest.GetURL(), pullRequestBody
 }
 
 func makeGithubClient(ctx context.Context) *github.Client {
@@ -215,7 +239,8 @@ func makeGithubClient(ctx context.Context) *github.Client {
 func readChangelog(wikiPath string) string {
 	out, err := ioutil.ReadFile(filepath.Join(wikiPath, "Changelog.md"))
 	if err != nil {
-		log.Fatalln(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 	return string(out)
 }
@@ -228,7 +253,8 @@ func writeChangelog(wikiPath, changelog string) bool {
 
 	err := ioutil.WriteFile(filepath.Join(wikiPath, "Changelog.md"), []byte(changelog), fs.ModePerm)
 	if err != nil {
-		log.Fatalln(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 	return true
 }
@@ -236,12 +262,14 @@ func writeChangelog(wikiPath, changelog string) bool {
 func commitAndPush(repo *git.Repository) {
 	worktree, err := repo.Worktree()
 	if err != nil {
-		log.Fatalln(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
 	_, err = worktree.Add(".")
 	if err != nil {
-		log.Fatalln(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
 	_, err = worktree.Commit(fmt.Sprintf("Update from kraken - %s", time.Now().Format("2006-01-02 15:04")), &git.CommitOptions{
@@ -252,20 +280,23 @@ func commitAndPush(repo *git.Repository) {
 		},
 	})
 	if err != nil {
-		log.Fatalln(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
 	err = repo.Push(&git.PushOptions{
 		Auth: auth,
 	})
 	if err != nil {
-		log.Fatalln(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 }
 
 func deleteWorkspace() {
 	err := os.RemoveAll(tmpDir)
 	if err != nil {
-		log.Fatalln(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 }

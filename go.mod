@@ -6,7 +6,7 @@ require (
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/google/go-cmp v0.5.6
 	github.com/google/go-github/v40 v40.0.0
-	github.com/podium-education/etcetera v0.12.1-0.20211112215412-24167fdb0250
+	github.com/podium-education/etcetera v0.12.1
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8
 )
 

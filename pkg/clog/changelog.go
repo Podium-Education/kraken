@@ -2,6 +2,7 @@ package clog
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/podium-education/etcetera/when"
@@ -13,6 +14,12 @@ type Changelog struct {
 }
 
 func (c *Changelog) AddRelease(version, pullRequestURL, pullRequestBody string) {
+	for _, release := range c.Releases {
+		if release.Version == version {
+			fmt.Printf("Version %s already exists in changelog\n", version)
+			os.Exit(1)
+		}
+	}
 	date, _ := when.Now()
 	release := parseRelease(strings.Split(pullRequestBody, "\n"))
 	release.Version = version
