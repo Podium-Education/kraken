@@ -25,6 +25,7 @@ func (c *Changelog) AddRelease(version, pullRequestURL, pullRequestBody string) 
 	release.Version = version
 	release.PullRequestURL = pullRequestURL
 	release.Date = date
+	fmt.Printf("\n%s\n\n", release)
 	c.Releases = append([]Release{release}, c.Releases...)
 }
 

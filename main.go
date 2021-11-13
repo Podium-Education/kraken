@@ -44,7 +44,7 @@ func main() {
 	}
 
 	args := os.Args[1:]
-	if len(args) != 1 {
+	if len(args) < 1 {
 		fmt.Println("please provide PR number as argument")
 		os.Exit(1)
 	}
@@ -53,6 +53,12 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+
+	var dryRun bool
+	if len(args) == 2 && args[1] == "--dry-run" {
+		dryRun = true
+	}
+
 	currentDir, err := os.Getwd()
 	if err != nil {
 		fmt.Println(err)
@@ -60,14 +66,14 @@ func main() {
 	}
 	project := path.Base(currentDir)
 
-	fmt.Printf("Running for %s - PR %d\n", project, pullRequestNumber)
+	fmt.Printf("Running for %s - PR %d | dry run=%v \n", project, pullRequestNumber, dryRun)
 	makeWorkspace()
 	wikiRepo, wikiPath := getWikiRepo(project)
 	changelog := clog.Parse(readChangelog(wikiPath))
 	version, pullRequestURL, pullRequestBody := getPullRequestDetails(project, pullRequestNumber)
 	fmt.Printf("Attempting to add version %s to changelog...\n", version)
 	changelog.AddRelease(version, pullRequestURL, pullRequestBody)
-	if writeChangelog(wikiPath, changelog.String()) {
+	if writeChangelog(wikiPath, changelog.String()) && !dryRun {
 		fmt.Printf("Pushing changes to %s...\n", project)
 		commitAndPush(wikiRepo)
 	}
@@ -169,7 +175,9 @@ func getPullRequestDetails(project string, pullRequestNumber int) (version strin
 		ctx,
 		GitHubOrg,
 		project,
-		&github.PullRequestListOptions{})
+		&github.PullRequestListOptions{
+			State: "all",
+		})
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -178,9 +186,12 @@ func getPullRequestDetails(project string, pullRequestNumber int) (version strin
 	var foundPullRequest *github.PullRequest
 	for _, pullRequest := range pullRequests {
 		if pullRequest != nil &&
-			pullRequest.GetNumber() == pullRequestNumber &&
-			pullRequest.GetState() == "open" {
+			pullRequest.GetNumber() == pullRequestNumber {
+			if pullRequest.GetState() != "open" {
+				fmt.Printf("Warning! Pull Request #%d is not open\n", pullRequestNumber)
+			}
 			foundPullRequest = pullRequest
+
 		}
 	}
 	if foundPullRequest == nil {
