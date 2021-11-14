@@ -236,7 +236,7 @@ func getPullRequestDetails(project string, pullRequestNumber int) (version strin
 	} else {
 		pullRequestBody = foundPullRequest.GetBody()
 	}
-	return version, foundPullRequest.GetURL(), pullRequestBody
+	return version, foundPullRequest.GetHTMLURL(), pullRequestBody
 }
 
 func makeGithubClient(ctx context.Context) *github.Client {
