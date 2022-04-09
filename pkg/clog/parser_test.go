@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/podium-education/etcetera/when"
 )
 
 func TestParse(t *testing.T) {
@@ -47,7 +46,7 @@ It has information about stuff!`,
 					{
 						Version:        "0.1.2",
 						PullRequestURL: "https://github.com/Hello/stuff-sdk/pull/2",
-						Date:           when.NewDate(2010, 10, 11),
+						Date:           "2010-10-11",
 						Changes: []Change{
 							{
 								Kind: "Changed",
@@ -67,7 +66,7 @@ It has information about stuff!`,
 					{
 						Version:        "0.0.1",
 						PullRequestURL: "https://github.com/Hello/stuff-sdk/pull/1",
-						Date:           when.NewDate(2010, 10, 10),
+						Date:           "2010-10-10",
 						Changes: []Change{
 							{
 								Kind: "Added",

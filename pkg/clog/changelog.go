@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
-
-	"github.com/podium-education/etcetera/when"
+	"time"
 )
 
 type Changelog struct {
@@ -20,7 +19,7 @@ func (c *Changelog) AddRelease(version, pullRequestURL, pullRequestBody string) 
 			os.Exit(1)
 		}
 	}
-	date, _ := when.Now()
+	date := time.Now().Format("2006-01-02")
 	release := parseRelease(strings.Split(pullRequestBody, "\n"))
 	release.Version = version
 	release.PullRequestURL = pullRequestURL
@@ -44,7 +43,7 @@ func (c Changelog) String() string {
 type Release struct {
 	Version        string
 	PullRequestURL string
-	Date           when.Date
+	Date           string
 	Changes        []Change
 }
 

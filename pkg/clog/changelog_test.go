@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/podium-education/etcetera/cheat"
 )
 
 func TestChangelog_String(t *testing.T) {
@@ -30,7 +29,7 @@ func TestChangelog_String(t *testing.T) {
 					{
 						Version:        "0.0.1",
 						PullRequestURL: "https://hello.com/pull/1",
-						Date:           cheat.Date("2021-10-10"),
+						Date:           "2021-10-10",
 						Changes: []Change{
 							{
 								Kind: "Added",
@@ -63,13 +62,13 @@ func TestRelease_String(t *testing.T) {
 	}{
 		{
 			Release{},
-			"## []() - 0000-00-00\n",
+			"## []() - \n",
 		},
 		{
 			Release{
 				Version:        "0.0.1",
 				PullRequestURL: "https://hello.com/pull/1",
-				Date:           cheat.Date("2021-10-10"),
+				Date:           "2021-10-10",
 				Changes: []Change{
 					{
 						Kind: "Added",

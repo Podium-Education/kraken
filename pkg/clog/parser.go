@@ -3,9 +3,6 @@ package clog
 import (
 	"regexp"
 	"strings"
-
-	"github.com/podium-education/etcetera/cheat"
-	"github.com/podium-education/etcetera/when"
 )
 
 func Parse(raw string) (changelog Changelog) {
@@ -92,10 +89,10 @@ func parseRelease(releaseLines []string) Release {
 	return release
 }
 
-func parseReleaseHeader(rawHeader string) (string, string, when.Date) {
+func parseReleaseHeader(rawHeader string) (string, string, string) {
 	pattern := regexp.MustCompile(`##\s\[(\d+\.\d+\.\d+)]\((https:[/a-zA-Z0-9.-]+)\)\s+-\s+(\d{4}-\d{1,2}-\d{1,2})`)
 	matches := pattern.FindAllStringSubmatch(rawHeader, -1)
-	return matches[0][1], matches[0][2], cheat.Date(matches[0][3])
+	return matches[0][1], matches[0][2], matches[0][3]
 }
 
 func parseChangeHeader(rawHeader string) string {
