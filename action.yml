@@ -1,0 +1,26 @@
+name: 'Kraken'
+description: 'Keep track of code changes using the Keep a Changelog format and GitHub wiki - https://keepachangelog.com/en/1.0.0/'
+inputs:
+  github-token:
+    description: GitHub Access Token for writing to the project wiki repo
+    required: true
+  github-repository:
+    description: The name of the GitHub Repository
+    required: true
+  github-sha:
+    description: The git commit SHA for the merged Pull Request
+    required: true
+  version:
+    description: The semantic version
+    required: true
+outputs:
+  result:
+    description: The result of the kraken action
+runs:
+  using: docker
+  image: Dockerfile
+  args:
+    - -github-token=${{ inputs.github-token }}
+    - -github-repo=${{ inputs.github-repository }}
+    - -git-commit=${{ inputs.github-sha }}
+    - -version=${{ inputs.version }}
