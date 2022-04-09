@@ -1,8 +1,8 @@
 package clog
 
 import (
+	"errors"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 )
@@ -12,11 +12,10 @@ type Changelog struct {
 	Releases []Release
 }
 
-func (c *Changelog) AddRelease(version, pullRequestURL, pullRequestBody string) {
+func (c *Changelog) AddRelease(version, pullRequestURL, pullRequestBody string) error {
 	for _, release := range c.Releases {
 		if release.Version == version {
-			fmt.Printf("Version %s already exists in changelog\n", version)
-			os.Exit(1)
+			return errors.New(fmt.Sprintf("Version %s already exists in changelog", version))
 		}
 	}
 	date := time.Now().Format("2006-01-02")
@@ -24,8 +23,8 @@ func (c *Changelog) AddRelease(version, pullRequestURL, pullRequestBody string) 
 	release.Version = version
 	release.PullRequestURL = pullRequestURL
 	release.Date = date
-	fmt.Printf("\n%s\n\n", release)
 	c.Releases = append([]Release{release}, c.Releases...)
+	return nil
 }
 
 func (c Changelog) String() string {

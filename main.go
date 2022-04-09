@@ -92,13 +92,12 @@ func (s Source) CloneWiki() error {
 	return err
 }
 
-func (s Source) ParseChangelog() clog.Changelog {
+func (s Source) ParseChangelog() (clog.Changelog, error) {
 	out, err := ioutil.ReadFile(filepath.Join(s.workDir, "Changelog.md"))
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		return clog.Changelog{}, err
 	}
-	return clog.Parse(string(out))
+	return clog.Parse(string(out)), nil
 }
 
 func (s Source) UpdateChangelog(changelog clog.Changelog) (err error) {
@@ -147,19 +146,24 @@ func main() {
 	pullRequest := src.GetPullRequest(gitCommitFlag)
 	if pullRequest != nil && *pullRequest.Base.Repo.HasWiki == true {
 		if err := src.CloneWiki(); err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "error %s\n", err)
-			os.Exit(1)
+			handleError(err)
 		}
-		changelog := src.ParseChangelog()
-		changelog.AddRelease(versionFlag, pullRequest.GetHTMLURL(), pullRequest.GetBody())
-		if err := src.UpdateChangelog(changelog); err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "error %s\n", err)
-			os.Exit(1)
-		}
-	}
 
-	result := "great success"
-	_, _ = fmt.Fprintf(os.Stdout, "::set-output name=result::%s\n", result)
+		changelog, err := src.ParseChangelog()
+		if err != nil {
+			handleError(err)
+		}
+
+		if err = changelog.AddRelease(versionFlag, pullRequest.GetHTMLURL(), pullRequest.GetBody()); err != nil {
+			handleError(err)
+		}
+
+		if err = src.UpdateChangelog(changelog); err != nil {
+			handleError(err)
+		}
+		_, _ = fmt.Fprintln(os.Stdout, "Added release to Changelog wiki")
+		_, _ = fmt.Fprintln(os.Stdout, changelog.Releases[0].String())
+	}
 }
 
 func init() {
@@ -181,4 +185,9 @@ func makeGithubClient(ctx context.Context, token string) *github.Client {
 func parseRepo(githubRepo string) (string, string) {
 	githubRepoParts := strings.Split(githubRepo, "/")
 	return githubRepoParts[0], githubRepoParts[1]
+}
+
+func handleError(err error) {
+	_, _ = fmt.Fprintf(os.Stderr, "error %s\n", err)
+	os.Exit(1)
 }
