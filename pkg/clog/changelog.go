@@ -18,7 +18,13 @@ func (c *Changelog) AddRelease(version, pullRequestURL, pullRequestBody string) 
 			return errors.New(fmt.Sprintf("Version %s already exists in changelog", version))
 		}
 	}
-	date := time.Now().Format("2006-01-02")
+
+	location, err := time.LoadLocation("America/Chicago")
+	if err != nil {
+		return err
+	}
+
+	date := time.Now().In(location).Format("2006-01-02")
 	release, err := parseRelease(strings.Split(pullRequestBody, "\n"))
 	if err != nil {
 		return err

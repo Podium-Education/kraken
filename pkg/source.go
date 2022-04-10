@@ -111,11 +111,16 @@ func (s Source) UpdateChangelog(changelog clog.Changelog) (err error) {
 		return err
 	}
 
+	location, err := time.LoadLocation("America/Chicago")
+	if err != nil {
+		return err
+	}
+
 	_, err = worktree.Commit(fmt.Sprintf("Update from kraken - %s", time.Now().Format("2006-01-02 15:04")), &git.CommitOptions{
 		Author: &object.Signature{
 			Name:  "kraken",
 			Email: "kraken",
-			When:  time.Now(),
+			When:  time.Now().In(location),
 		},
 	})
 	if err != nil {
