@@ -29,7 +29,16 @@ func main() {
 			handleError(err)
 		}
 
-		if err = changelog.AddRelease(versionFlag, pullRequest.GetHTMLURL(), pullRequest.GetBody()); err != nil {
+		var pullRequestBody string
+		if pullRequest.GetUser().GetLogin() == "dependabot[bot]" {
+			pullRequestBody = `### Security
+- Dependabot bumped dependencies
+`
+		} else {
+			pullRequestBody = pullRequest.GetBody()
+		}
+
+		if err = changelog.AddRelease(versionFlag, pullRequest.GetHTMLURL(), pullRequestBody); err != nil {
 			handleError(err)
 		}
 
