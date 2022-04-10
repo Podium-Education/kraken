@@ -19,7 +19,10 @@ func (c *Changelog) AddRelease(version, pullRequestURL, pullRequestBody string) 
 		}
 	}
 	date := time.Now().Format("2006-01-02")
-	release := parseRelease(strings.Split(pullRequestBody, "\n"))
+	release, err := parseRelease(strings.Split(pullRequestBody, "\n"))
+	if err != nil {
+		return err
+	}
 	release.Version = version
 	release.PullRequestURL = pullRequestURL
 	release.Date = date

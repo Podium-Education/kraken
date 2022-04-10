@@ -1,26 +1,32 @@
 package clog
 
 import (
+	"errors"
 	"regexp"
 	"strings"
 )
 
-func Parse(raw string) (changelog Changelog) {
+func Parse(raw string) (Changelog, error) {
 	changelogLines := strings.Split(raw, "\n")
 	header, headerEndIndex := extractHeader(changelogLines)
+
+	var changelog Changelog
 	changelog.Header = header
 	if headerEndIndex == 0 {
-		// no releases found in changelog
-		return
+		return changelog, nil
 	}
 
 	rawReleases := extractReleases(changelogLines[headerEndIndex:])
 	var releases []Release
 	for _, rawRelease := range rawReleases {
-		releases = append(releases, parseRelease(rawRelease))
+		release, err := parseRelease(rawRelease)
+		if err != nil {
+			return changelog, err
+		}
+		releases = append(releases, release)
 	}
 	changelog.Releases = releases
-	return
+	return changelog, nil
 }
 
 func extractHeader(changelogLines []string) ([]string, int) {
@@ -53,9 +59,14 @@ func extractReleases(releaseLines []string) [][]string {
 	return releases
 }
 
-func parseRelease(releaseLines []string) Release {
+func parseRelease(releaseLines []string) (Release, error) {
 	var release Release
 	var change Change
+
+	if !strings.HasPrefix(releaseLines[0], "## ") {
+		return Release{}, errors.New("unexpected format for the release notes")
+	}
+
 	for i, releaseLine := range releaseLines {
 		if i == 0 && strings.HasPrefix(releaseLine, "## ") {
 			version, pullRequestURL, date := parseReleaseHeader(releaseLine)
@@ -86,7 +97,7 @@ func parseRelease(releaseLines []string) Release {
 			release.Changes = append(release.Changes, change)
 		}
 	}
-	return release
+	return release, nil
 }
 
 func parseReleaseHeader(rawHeader string) (string, string, string) {

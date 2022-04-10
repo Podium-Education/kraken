@@ -1,3 +1,6 @@
+.DS_Store
+.idea
 build
 tmp
-.idea
+vendor
+coverage.txt
