@@ -1,7 +1,6 @@
 package clog
 
 import (
-	"errors"
 	"regexp"
 	"strings"
 )
@@ -62,10 +61,6 @@ func extractReleases(releaseLines []string) [][]string {
 func parseRelease(releaseLines []string) (Release, error) {
 	var release Release
 	var change Change
-
-	if !strings.HasPrefix(releaseLines[0], "## ") {
-		return Release{}, errors.New("unexpected format for the release notes")
-	}
 
 	for i, releaseLine := range releaseLines {
 		if i == 0 && strings.HasPrefix(releaseLine, "## ") {
