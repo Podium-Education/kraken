@@ -1,0 +1,61 @@
+name: release
+
+on:
+  workflow_run:
+    workflows: [ test ]
+    types: [ completed ]
+    branches: main
+
+jobs:
+  release:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Read .SEMVER file
+        id: getversion
+        run: echo "::set-output name=version::$(cat .SEMVER)"
+
+      - name: Update Changelog
+        uses: ./
+        id: kraken
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-repository:  ${{ github.repository }}
+          github-sha: ${{ github.sha }}
+          version: ${{ steps.getversion.outputs.version }}
+
+      - name: Push version tag
+        uses: anothrNick/github-tag-action@1.38.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CUSTOM_TAG: v${{ steps.getversion.outputs.version }}
+          RELEASE_BRANCHES: main
+
+      - name: Alert Slack of release
+        id: slack
+        uses: slackapi/slack-github-action@v1.18
+        with:
+          payload: |
+            {
+              "github_repository": "${{ github.event.repository.name }}",
+              "version": "${{ steps.getversion.outputs.version }}" 
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.RELEASES_SLACK_WEBHOOK_URL }}
+
+      - name: Alert Slack of failure
+        uses: slackapi/slack-github-action@v1.18
+        if: failure()
+        with:
+          payload: |
+            {
+              "github_repository": "${{ github.event.repository.name }}",
+              "workflow": "${{ github.workflow }}",
+              "action_url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}", 
+              "status": "${{ job.status }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.CI_ALERT_SLACK_WEBHOOK_URL }}

@@ -1,0 +1,25 @@
+version: 2
+
+registries:
+  github-podium-education:
+    type: git
+    url: https://github.com
+    username: x-access-token
+    password: ${{secrets.PODBOT_GITHUB_PAT}}
+
+updates:
+  - package-ecosystem: "gomod"
+    registries:
+      - github-podium-education
+    directory: "/"
+    schedule:
+      interval: "daily"
+    pull-request-branch-name:
+      separator: "-"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    pull-request-branch-name:
+      separator: "-"

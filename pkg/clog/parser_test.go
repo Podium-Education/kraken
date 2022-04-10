@@ -82,7 +82,10 @@ It has information about stuff!`,
 	}
 	for _, tc := range testCases {
 		t.Run(tc.testTitle, func(t *testing.T) {
-			got := Parse(tc.raw)
+			got, err := Parse(tc.raw)
+			if err != nil {
+				t.Fatal("unexpected error", err)
+			}
 			if !cmp.Equal(got, tc.want) {
 				t.Error(cmp.Diff(got, tc.want))
 			}

@@ -1,0 +1,50 @@
+name: test
+on:
+  push:
+    branches:
+      - main
+  pull_request: { }
+
+jobs:
+  golang:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.18.x
+
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Run coverage
+        run: go test -race -coverprofile=coverage.txt -covermode=atomic ./...
+
+      - name: Upload coverage to Codecov
+        run: bash <(curl -s https://codecov.io/bash)
+
+      - name: Lint
+        uses: golangci/golangci-lint-action@v3.1.0
+        with:
+          version: latest
+          skip-pkg-cache: true
+          skip-build-cache: true
+
+      - name: Build
+        run: make
+
+      - name: Alert Slack of failure
+        uses: slackapi/slack-github-action@v1.18
+        if: failure()
+        with:
+          payload: |
+            {
+              "github_repository": "${{ github.event.repository.name }}",
+              "workflow": "${{ github.workflow }}",
+              "action_url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}", 
+              "status": "${{ job.status }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.CI_ALERT_SLACK_WEBHOOK_URL }}
