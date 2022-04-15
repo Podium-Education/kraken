@@ -4,49 +4,62 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 
 	kraken "github.com/podium-education/kraken/pkg"
 )
 
 var (
-	githubTokenFlag string
-	githubRepoFlag  string
-	gitCommitFlag   string
-	versionFlag     string
+	githubTokenFlag  string
+	githubRepoFlag   string
+	gitCommitFlag    string
+	versionFlag      string
+	gitTagModeFlag   string
+	gitTagFormatFlag string
 )
 
 func main() {
 	src := kraken.NewSource(githubTokenFlag, githubRepoFlag)
 
 	pullRequest := src.GetPullRequest(gitCommitFlag)
-	if pullRequest != nil && *pullRequest.Base.Repo.HasWiki == true {
-		if err := src.CloneWiki(); err != nil {
-			handleError(err)
-		}
+	if pullRequest != nil {
+		if *pullRequest.Base.Repo.HasWiki == true {
+			if err := src.CloneWiki(); err != nil {
+				handleError(err)
+			}
 
-		changelog, err := src.ParseChangelog()
-		if err != nil {
-			handleError(err)
-		}
+			changelog, err := src.ParseChangelog()
+			if err != nil {
+				handleError(err)
+			}
 
-		var pullRequestBody string
-		if pullRequest.GetUser().GetLogin() == "dependabot[bot]" {
-			pullRequestBody = `### Security
+			var pullRequestBody string
+			if pullRequest.GetUser().GetLogin() == "dependabot[bot]" {
+				pullRequestBody = `### Security
 - Dependabot bumped dependencies
 `
-		} else {
-			pullRequestBody = pullRequest.GetBody()
+			} else {
+				pullRequestBody = pullRequest.GetBody()
+			}
+
+			if err = changelog.AddRelease(versionFlag, pullRequest.GetHTMLURL(), pullRequestBody); err != nil {
+				handleError(err)
+			}
+
+			if err = src.UpdateChangelog(changelog); err != nil {
+				handleError(err)
+			}
+			_, _ = fmt.Fprintln(os.Stdout, "Added release to Changelog wiki")
+			_, _ = fmt.Fprintln(os.Stdout, changelog.Releases[0].String())
 		}
 
-		if err = changelog.AddRelease(versionFlag, pullRequest.GetHTMLURL(), pullRequestBody); err != nil {
-			handleError(err)
+		if strings.ToLower(gitTagModeFlag) == "on" {
+			if err := src.Tag(gitCommitFlag, versionFlag, gitTagFormatFlag); err != nil {
+				handleError(err)
+			}
+			_, _ = fmt.Fprintf(os.Stdout, "Tag created for version: %s", versionFlag)
 		}
 
-		if err = src.UpdateChangelog(changelog); err != nil {
-			handleError(err)
-		}
-		_, _ = fmt.Fprintln(os.Stdout, "Added release to Changelog wiki")
-		_, _ = fmt.Fprintln(os.Stdout, changelog.Releases[0].String())
 	}
 }
 
@@ -55,6 +68,8 @@ func init() {
 	flag.StringVar(&githubRepoFlag, "github-repo", "", "GitHub repository")
 	flag.StringVar(&gitCommitFlag, "git-commit", "", "git commit hash")
 	flag.StringVar(&versionFlag, "version", "", "The semantic version")
+	flag.StringVar(&gitTagModeFlag, "git-tag-mode", "off", "Handling of the version git tag")
+	flag.StringVar(&gitTagFormatFlag, "git-tag-format", "{version}", "The format of the version git tag")
 	flag.Parse()
 }
 

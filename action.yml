@@ -13,6 +13,17 @@ inputs:
   version:
     description: The semantic version
     required: true
+  git-tag-mode:
+    description: | 
+      Handling of creating the version git tag
+      "off" - no git tag will be created
+      "on" - git tag will be created
+    required: true
+    default: off
+  git-tag-format:
+    description: The format of the version git tag, use "<version>" as a placeholder for the version value. For example, "v<version>"
+    required: true
+    default: <version>
 outputs:
   result:
     description: The result of the kraken action
@@ -24,3 +35,5 @@ runs:
     - -github-repo=${{ inputs.github-repository }}
     - -git-commit=${{ inputs.github-sha }}
     - -version=${{ inputs.version }}
+    - -git-tag-mode=${{ inputs.git-tag-mode }}
+    - -git-tag-format=${{ inputs.git-tag-format }}

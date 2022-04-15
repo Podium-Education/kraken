@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/google/go-github/v40/github"
@@ -74,6 +76,32 @@ func (s Source) GetPullRequest(gitCommit string) *github.PullRequest {
 		page = response.NextPage
 	}
 	return nil
+}
+
+func (s Source) Tag(commit, version, tagFormat string) error {
+	repo, err := git.PlainOpen(".")
+	if err != nil {
+		return err
+	}
+
+	_, err = repo.CreateTag(strings.ReplaceAll(tagFormat, "<version>", version), plumbing.NewHash(commit), &git.CreateTagOptions{
+		Tagger: &object.Signature{
+			Name:  "kraken",
+			Email: "kraken",
+			When:  time.Now(),
+		},
+		Message: fmt.Sprintf("Kraken created tag for version: %s", version),
+	})
+	if err != nil {
+		return err
+	}
+
+	return repo.Push(&git.PushOptions{
+		Auth: s.gitAuth,
+		RefSpecs: []config.RefSpec{
+			"refs/tags/*:refs/tags/*",
+		},
+	})
 }
 
 func (s Source) CloneWiki() error {
