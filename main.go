@@ -50,9 +50,6 @@ func main() {
 			if err = src.UpdateChangelog(changelog); err != nil {
 				handleError(err)
 			}
-
-			gitTagMessage = changelog.Releases[0].String()
-
 			_, _ = fmt.Fprintln(os.Stdout, "Added release to Changelog wiki")
 			_, _ = fmt.Fprintln(os.Stdout, changelog.Releases[0].String())
 		}
