@@ -18,7 +18,7 @@ jobs:
         id: getversion
         run: echo "::set-output name=version::$(cat .SEMVER)"
 
-      - name: Update Changelog
+      - name: Kraken the release
         uses: ./
         id: kraken
         with:
@@ -26,13 +26,8 @@ jobs:
           github-repository:  ${{ github.repository }}
           github-sha: ${{ github.sha }}
           version: ${{ steps.getversion.outputs.version }}
-
-      - name: Push version tag
-        uses: anothrNick/github-tag-action@1.38.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CUSTOM_TAG: v${{ steps.getversion.outputs.version }}
-          RELEASE_BRANCHES: main
+          git-tag-mode: on
+          git-tag-format: v<version>
 
       - name: Alert Slack of release
         id: slack

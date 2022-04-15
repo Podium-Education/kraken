@@ -23,7 +23,17 @@ func main() {
 
 	pullRequest := src.GetPullRequest(gitCommitFlag)
 	if pullRequest != nil {
-		gitTagMessage := fmt.Sprintf("kraken created tag for version: %s", versionFlag)
+		if strings.ToLower(gitTagModeFlag) == "on" {
+			if err := src.CloneSource(); err != nil {
+				handleError(err)
+			}
+			gitTagMessage := fmt.Sprintf("kraken created tag for version: %s", versionFlag)
+			if err := src.Tag(gitCommitFlag, versionFlag, gitTagFormatFlag, gitTagMessage); err != nil {
+				handleError(err)
+			}
+			_, _ = fmt.Fprintf(os.Stdout, "Tag created for version: %s", versionFlag)
+		}
+
 		if *pullRequest.Base.Repo.HasWiki == true {
 			if err := src.CloneWiki(); err != nil {
 				handleError(err)
@@ -53,17 +63,6 @@ func main() {
 			_, _ = fmt.Fprintln(os.Stdout, "Added release to Changelog wiki")
 			_, _ = fmt.Fprintln(os.Stdout, changelog.Releases[0].String())
 		}
-
-		if strings.ToLower(gitTagModeFlag) == "on" {
-			if err := src.CloneSource(); err != nil {
-				handleError(err)
-			}
-			if err := src.Tag(gitCommitFlag, versionFlag, gitTagFormatFlag, gitTagMessage); err != nil {
-				handleError(err)
-			}
-			_, _ = fmt.Fprintf(os.Stdout, "Tag created for version: %s", versionFlag)
-		}
-
 	}
 }
 
