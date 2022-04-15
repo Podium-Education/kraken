@@ -54,6 +54,9 @@ func main() {
 		}
 
 		if strings.ToLower(gitTagModeFlag) == "on" {
+			if err := src.CloneSource(); err != nil {
+				handleError(err)
+			}
 			if err := src.Tag(gitCommitFlag, versionFlag, gitTagFormatFlag); err != nil {
 				handleError(err)
 			}
