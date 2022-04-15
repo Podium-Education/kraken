@@ -90,7 +90,7 @@ func (s Source) CloneSource() error {
 	return err
 }
 
-func (s Source) Tag(commit, version, tagFormat string) error {
+func (s Source) Tag(commit, version, tagFormat, message string) error {
 	repo, err := git.PlainOpen(s.SourceDir())
 	if err != nil {
 		return err
@@ -102,7 +102,7 @@ func (s Source) Tag(commit, version, tagFormat string) error {
 			Email: "kraken",
 			When:  time.Now(),
 		},
-		Message: fmt.Sprintf("Kraken created tag for version: %s", version),
+		Message: message,
 	})
 	if err != nil {
 		return err
