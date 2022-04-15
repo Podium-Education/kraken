@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/google/go-github/v40/github"
@@ -76,8 +78,50 @@ func (s Source) GetPullRequest(gitCommit string) *github.PullRequest {
 	return nil
 }
 
+func (s Source) SourceDir() string {
+	return filepath.Join(s.workDir, "main")
+}
+
+func (s Source) CloneSource() error {
+	_, err := git.PlainClone(s.SourceDir(), false, &git.CloneOptions{
+		URL:  fmt.Sprintf("https://github.com/%s/%s.git", s.organization, s.project),
+		Auth: s.gitAuth,
+	})
+	return err
+}
+
+func (s Source) Tag(commit, version, tagFormat, message string) error {
+	repo, err := git.PlainOpen(s.SourceDir())
+	if err != nil {
+		return err
+	}
+
+	_, err = repo.CreateTag(strings.ReplaceAll(tagFormat, "<version>", version), plumbing.NewHash(commit), &git.CreateTagOptions{
+		Tagger: &object.Signature{
+			Name:  "kraken",
+			Email: "kraken",
+			When:  time.Now(),
+		},
+		Message: message,
+	})
+	if err != nil {
+		return err
+	}
+
+	return repo.Push(&git.PushOptions{
+		Auth: s.gitAuth,
+		RefSpecs: []config.RefSpec{
+			"refs/tags/*:refs/tags/*",
+		},
+	})
+}
+
+func (s Source) WikiDir() string {
+	return filepath.Join(s.workDir, "wiki")
+}
+
 func (s Source) CloneWiki() error {
-	_, err := git.PlainClone(s.workDir, false, &git.CloneOptions{
+	_, err := git.PlainClone(s.WikiDir(), false, &git.CloneOptions{
 		URL:  fmt.Sprintf("https://github.com/%s/%s.wiki.git", s.organization, s.project),
 		Auth: s.gitAuth,
 	})
@@ -85,7 +129,7 @@ func (s Source) CloneWiki() error {
 }
 
 func (s Source) ParseChangelog() (clog.Changelog, error) {
-	out, err := ioutil.ReadFile(filepath.Join(s.workDir, "Changelog.md"))
+	out, err := ioutil.ReadFile(filepath.Join(s.WikiDir(), "Changelog.md"))
 	if err != nil {
 		return clog.Changelog{}, err
 	}
@@ -93,7 +137,7 @@ func (s Source) ParseChangelog() (clog.Changelog, error) {
 }
 
 func (s Source) UpdateChangelog(changelog clog.Changelog) (err error) {
-	repo, err := git.PlainOpen(s.workDir)
+	repo, err := git.PlainOpen(s.WikiDir())
 	if err != nil {
 		return err
 	}
