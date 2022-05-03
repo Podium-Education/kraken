@@ -25,7 +25,8 @@ type Source struct {
 	ctx          context.Context
 	organization string
 	project      string
-	workDir      string
+	tmpDir       string
+	ghWorkspace  string
 	ghClient     *github.Client
 	gitAuth      *http.BasicAuth
 }
@@ -42,7 +43,8 @@ func NewSource(githubToken, githubRepo string) Source {
 		ctx:          ctx,
 		organization: githubOrg,
 		project:      githubProject,
-		workDir:      dir,
+		tmpDir:       dir,
+		ghWorkspace:  os.Getenv("GITHUB_WORKSPACE"),
 		ghClient:     makeGithubClient(ctx, githubToken),
 		gitAuth: &http.BasicAuth{
 			Username: "me",
@@ -78,30 +80,13 @@ func (s Source) GetPullRequest(gitCommit string) *github.PullRequest {
 	return nil
 }
 
-func (s Source) SourceDir() string {
-	return filepath.Join(s.workDir, "main")
-}
-
-func (s Source) CloneSource() error {
-	_, err := git.PlainClone(s.SourceDir(), false, &git.CloneOptions{
-		URL:  fmt.Sprintf("https://github.com/%s/%s.git", s.organization, s.project),
-		Auth: s.gitAuth,
-	})
-	return err
-}
-
 func (s Source) Tag(commit, version, tagFormat, message string) error {
-	repo, err := git.PlainOpen(s.SourceDir())
+	repo, err := git.PlainOpen(s.ghWorkspace)
 	if err != nil {
 		return err
 	}
 
 	_, err = repo.CreateTag(strings.ReplaceAll(tagFormat, "<version>", version), plumbing.NewHash(commit), &git.CreateTagOptions{
-		Tagger: &object.Signature{
-			Name:  "kraken",
-			Email: "kraken",
-			When:  time.Now(),
-		},
 		Message: message,
 	})
 	if err != nil {
@@ -117,7 +102,7 @@ func (s Source) Tag(commit, version, tagFormat, message string) error {
 }
 
 func (s Source) WikiDir() string {
-	return filepath.Join(s.workDir, "wiki")
+	return filepath.Join(s.tmpDir, "wiki")
 }
 
 func (s Source) CloneWiki() error {
@@ -142,7 +127,7 @@ func (s Source) UpdateChangelog(changelog clog.Changelog) (err error) {
 		return err
 	}
 
-	if err = ioutil.WriteFile(filepath.Join(s.workDir, "Changelog.md"), []byte(changelog.String()), fs.ModePerm); err != nil {
+	if err = ioutil.WriteFile(filepath.Join(s.tmpDir, "Changelog.md"), []byte(changelog.String()), fs.ModePerm); err != nil {
 		return err
 	}
 	worktree, err := repo.Worktree()

@@ -24,9 +24,6 @@ func main() {
 	pullRequest := src.GetPullRequest(gitCommitFlag)
 	if pullRequest != nil {
 		if strings.ToLower(gitTagModeFlag) == "on" {
-			if err := src.CloneSource(); err != nil {
-				handleError(err)
-			}
 			gitTagMessage := fmt.Sprintf("kraken created tag for version: %s", versionFlag)
 			if err := src.Tag(gitCommitFlag, versionFlag, gitTagFormatFlag, gitTagMessage); err != nil {
 				handleError(err)
