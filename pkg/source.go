@@ -142,7 +142,7 @@ func (s Source) UpdateChangelog(changelog clog.Changelog) (err error) {
 		return err
 	}
 
-	if err = ioutil.WriteFile(filepath.Join(s.workDir, "Changelog.md"), []byte(changelog.String()), fs.ModePerm); err != nil {
+	if err = ioutil.WriteFile(filepath.Join(s.WikiDir(), "Changelog.md"), []byte(changelog.String()), fs.ModePerm); err != nil {
 		return err
 	}
 	worktree, err := repo.Worktree()

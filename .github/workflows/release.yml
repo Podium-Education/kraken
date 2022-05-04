@@ -31,7 +31,7 @@ jobs:
 
       - name: Alert Slack of release
         id: slack
-        uses: slackapi/slack-github-action@v1.18
+        uses: slackapi/slack-github-action@v1.19
         with:
           payload: |
             {
