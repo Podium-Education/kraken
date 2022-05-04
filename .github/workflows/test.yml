@@ -36,7 +36,7 @@ jobs:
         run: make
 
       - name: Alert Slack of failure
-        uses: slackapi/slack-github-action@v1.18
+        uses: slackapi/slack-github-action@v1.19
         if: failure()
         with:
           payload: |
