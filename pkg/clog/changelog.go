@@ -1,7 +1,6 @@
 package clog
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -15,7 +14,7 @@ type Changelog struct {
 func (c *Changelog) AddRelease(version, pullRequestURL, pullRequestBody string) error {
 	for _, release := range c.Releases {
 		if release.Version == version {
-			return errors.New(fmt.Sprintf("Version %s already exists in changelog", version))
+			return fmt.Errorf("version %s already exists in changelog", version)
 		}
 	}
 

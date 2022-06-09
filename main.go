@@ -34,7 +34,7 @@ func main() {
 			_, _ = fmt.Fprintf(os.Stdout, "Tag created for version: %s", versionFlag)
 		}
 
-		if *pullRequest.Base.Repo.HasWiki == true {
+		if *pullRequest.Base.Repo.HasWiki {
 			if err := src.CloneWiki(); err != nil {
 				handleError(err)
 			}
