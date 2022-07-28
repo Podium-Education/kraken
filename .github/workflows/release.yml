@@ -31,7 +31,7 @@ jobs:
 
       - name: Alert Slack of release
         id: slack
-        uses: slackapi/slack-github-action@v1.19
+        uses: slackapi/slack-github-action@v1.21
         with:
           payload: |
             {
@@ -42,7 +42,7 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.RELEASES_SLACK_WEBHOOK_URL }}
 
       - name: Alert Slack of failure
-        uses: slackapi/slack-github-action@v1.19
+        uses: slackapi/slack-github-action@v1.21
         if: failure()
         with:
           payload: |
